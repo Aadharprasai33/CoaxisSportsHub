@@ -5,7 +5,7 @@
 export const SITE = {
   name: "Coaxis Sports",
   tagline: "Highlights. Stories. Greatness.",
-  url: "https://coaxis-sports.vercel.app", // update after you deploy
+  url: "https://coaxis-sports-hub.vercel.app", // live on Vercel
 
   socials: {
     youtube: "https://www.youtube.com/@CoaxisSportshub",
