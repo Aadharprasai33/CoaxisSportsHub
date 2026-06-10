@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, Chakra_Petch } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { SITE } from "@/lib/config";
 import "./globals.css";
 
@@ -49,7 +50,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${anton.variable} ${chakra.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
