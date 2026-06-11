@@ -59,7 +59,7 @@ export type Scorer = {
 };
 
 export type WcData = {
-  source: "live" | "snapshot";
+  source: "espn" | "live" | "snapshot";
   updatedAt: string;
   fixtures: Fixture[];
   groups: GroupTable[];

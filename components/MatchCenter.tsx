@@ -311,7 +311,7 @@ export default function MatchCenter({ initial }: { initial: WcData }) {
         {tab === "boot" && <GoldenBoot data={data} />}
 
         <div className="updated">
-          Data feed: <b>{data.source}</b> · last refresh <b>{refreshed}</b>
+          Data feed: <b>{data.source === "snapshot" ? "snapshot" : "live"}</b> · last refresh <b>{refreshed}</b>
         </div>
       </div>
     </section>

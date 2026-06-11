@@ -20,5 +20,5 @@ export const SITE = {
   kickoffUTC: "2026-06-11T19:00:00Z",
 
   /** How often the browser re-pulls /api/wc (seconds). */
-  refreshSeconds: 60,
+  refreshSeconds: 30,
 } as const;

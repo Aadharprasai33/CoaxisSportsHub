@@ -1,3 +1,4 @@
+import { getEspnData } from "./espn";
 import { SNAPSHOT } from "./snapshot";
 import type {
   Fixture,
@@ -145,30 +146,75 @@ function buildTicker(fixtures: Fixture[], scorers: Scorer[]): string[] {
   return lines.length > 2 ? lines : SNAPSHOT.ticker;
 }
 
-/* ---------- entry point ---------- */
+/* ---------- scorers (best-effort enrichment) ----------
+   ESPN's free feed has no Golden Boot endpoint, so scorers come
+   from football-data when a key is present (a goal tally reads
+   fine slightly delayed); otherwise the snapshot contenders. */
 
-export async function getWcData(): Promise<WcData> {
+async function getScorers(): Promise<Scorer[]> {
   const key = process.env.FOOTBALL_DATA_API_KEY;
   if (key) {
     try {
-      const [matchesJson, standingsJson, scorersJson] = await Promise.all([
-        fd("/matches", key),
-        fd("/standings", key),
-        fd("/scorers?limit=12", key),
-      ]);
-      const fixtures = normalizeFixtures(matchesJson);
-      const scorers = normalizeScorers(scorersJson);
+      const scorers = normalizeScorers(await fd("/scorers?limit=12", key));
+      if (scorers.length) return scorers;
+    } catch {
+      // ignore — fall back to snapshot contenders
+    }
+  }
+  return SNAPSHOT.scorers;
+}
+
+/* ---------- football-data (official, delayed on free tier) ---------- */
+
+async function getFootballData(): Promise<WcData | null> {
+  const key = process.env.FOOTBALL_DATA_API_KEY;
+  if (!key) return null;
+  try {
+    const [matchesJson, standingsJson, scorersJson] = await Promise.all([
+      fd("/matches", key),
+      fd("/standings", key),
+      fd("/scorers?limit=12", key),
+    ]);
+    const fixtures = normalizeFixtures(matchesJson);
+    const scorers = normalizeScorers(scorersJson);
+    return {
+      source: "live",
+      updatedAt: new Date().toISOString(),
+      fixtures,
+      groups: normalizeGroups(standingsJson),
+      scorers,
+      ticker: buildTicker(fixtures, scorers),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/* ---------- entry point: ESPN (free live) → football-data → snapshot ---------- */
+
+export async function getWcData(): Promise<WcData> {
+  // 1) ESPN — free, live, no key required. Primary source.
+  try {
+    const { fixtures, groups } = await getEspnData();
+    if (fixtures.length) {
+      const scorers = await getScorers();
       return {
-        source: "live",
+        source: "espn",
         updatedAt: new Date().toISOString(),
         fixtures,
-        groups: normalizeGroups(standingsJson),
+        groups: groups.length ? groups : SNAPSHOT.groups,
         scorers,
         ticker: buildTicker(fixtures, scorers),
       };
-    } catch {
-      // fall through to snapshot — the show must go on
     }
+  } catch {
+    // ESPN unreachable — drop to the next source
   }
+
+  // 2) football-data — the user's key (official, but delayed scores on free).
+  const fallback = await getFootballData();
+  if (fallback) return fallback;
+
+  // 3) snapshot — never let the page break.
   return { ...SNAPSHOT, updatedAt: new Date().toISOString() };
 }

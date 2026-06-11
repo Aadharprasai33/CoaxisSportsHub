@@ -15,7 +15,7 @@ import Ticker from "@/components/Ticker";
 import { buildRoadmap } from "@/lib/roadmap";
 import { getWcData } from "@/lib/wc";
 
-export const revalidate = 60;
+export const revalidate = 30;
 
 export default async function Home() {
   const data = await getWcData();
